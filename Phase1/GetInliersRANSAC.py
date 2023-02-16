@@ -26,8 +26,8 @@ def ransac(MatchPairs, MaxIter, threshold):
         InlierList = []
         OutlierList = []
         for j in range(NumPairs):
-            x1 = np.array(list(MatchPairs[j].coords1).append(1))
-            x2 = np.array(list(MatchPairs[j].coords2).append(1))
+            x1 = np.array(list(MatchPairs[j].coords1)+[1])
+            x2 = np.array(list(MatchPairs[j].coords2)+[1])
             x2Fx1 = abs(np.matmul(x2.T, np.matmul(F, x1)))
             if x2Fx1 < threshold:
                 InlierList.append(j)

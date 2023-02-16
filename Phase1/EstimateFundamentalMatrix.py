@@ -29,7 +29,7 @@ def EstimateFundamentalMatrix(x1s, x2s):
 
     U, S, VT = np.linalg.svd(F)
 
-    S[2, 2] = 0.
-    F = np.matmul(U, np.matmul(S, VT))
+    S[2] = 0.
+    F = np.matmul(U, np.matmul(np.diag(S), VT))
 
     return F
