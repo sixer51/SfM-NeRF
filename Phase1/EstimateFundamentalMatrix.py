@@ -4,6 +4,10 @@ Estimate fundamental matrix F by solving linear least square
 '''
 
 import numpy as np
+import sys
+
+# Don't generate pyc codes
+sys.dont_write_bytecode = True
 
 def EstimateFundamentalMatrix(x1s, x2s):
     # x2 F x1 = 0

@@ -4,6 +4,10 @@ Estimate essential matrix E
 '''
 
 import numpy as np
+import sys
+
+# Don't generate pyc codes
+sys.dont_write_bytecode = True
 
 def EssentialFromFundamental(F, K):
     F = np.array(F)
