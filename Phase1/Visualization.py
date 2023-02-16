@@ -26,15 +26,17 @@ def displayImages(images, numCol = 4):
     plt.show()
     return
 
-def drawMatchs(img1,img2,img1FeaturePoints, img2FeaturePoints, matches):
+# def drawMatchs(img1,img2,img1FeaturePoints, img2FeaturePoints, matches):
+def drawMatchs(img1,img2,pairs):
     emptyImage = np.zeros((img2.shape[0],img1.shape[1],3), dtype=np.uint8)
     matchImage = np.concatenate((img2,emptyImage), axis=1)
     matchImage[0:img1.shape[0],img2.shape[1]:img2.shape[1]+img1.shape[1],...] = img1
-    img1FeaturePoints = img1FeaturePoints + np.array([0,len(img2[0])])
-    for match in matches:
-        leftPoint = [img2FeaturePoints[match[1]][1],img2FeaturePoints[match[1]][0]]
-        rightPoint = [img1FeaturePoints[match[0]][1],img1FeaturePoints[match[0]][0]]
+    # img1FeaturePoints = img1FeaturePoints + np.array([0,len(img2[0])])
+    for pair in pairs:
+        leftPoint = (int(pair.coords2[0]), int(pair.coords2[1]))
+        rightPoint = (int(pair.coords1[0]) + len(img2[0]), int(pair.coords1[1]))
+
         matchImage = cv2.circle(matchImage, (leftPoint[0],leftPoint[1]), radius = 4, color=(0,0,255), thickness = 2)
         matchImage = cv2.circle(matchImage, (rightPoint[0],rightPoint[1]), radius = 4, color=(0,255,0), thickness = 2)
-        matchImage = cv2.line(matchImage, leftPoint, rightPoint, color=(255,0,0),thickness=1)
+        matchImage = cv2.line(matchImage, leftPoint, rightPoint, color=(255,0,0),thickness=2)
     return matchImage

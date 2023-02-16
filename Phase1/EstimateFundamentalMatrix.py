@@ -15,10 +15,10 @@ def EstimateFundamentalMatrix(x1s, x2s):
     A = []
 
     for i in range(length):
-        x1 = x1s[0]
-        y1 = x1s[1]
-        x2 = x2s[0]
-        y2 = x2s[1]
+        x1 = x1s[i, 0]
+        y1 = x1s[i, 1]
+        x2 = x2s[i, 0]
+        y2 = x2s[i, 1]
         A.append([x1 * x2, x1 * y2, x1,
                   y1 * x2, y1 * y2, y1,
                   x2, y2, 1])
@@ -28,6 +28,7 @@ def EstimateFundamentalMatrix(x1s, x2s):
     F = VT[-1, :].reshape((3, 3))
 
     U, S, VT = np.linalg.svd(F)
+
     S[2, 2] = 0.
     F = np.matmul(U, np.matmul(S, VT))
 
