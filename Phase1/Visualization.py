@@ -43,16 +43,17 @@ def drawMatchs(img1,img2,pairs):
 
 def drawWorldPoints(multiXs, labels = []):
     fig = plt.figure()
-    ax = plt.axes(projection ='3d')
+    # ax = plt.axes(projection ='3d')
 
     for i in range(len(multiXs)):
-        x = multiXs[i, :, 0:]
-        y = multiXs[i, :, 1:]
-        z = multiXs[i, :, 2:]
-        ax.scatter(x, y, z)
+        x = multiXs[i][:, 0]
+        # y = multiXs[i][:, 1]
+        z = multiXs[i][:, 2]
+        # ax.scatter(x, y, z)
+        plt.plot(x,z)
         
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_zlabel('z')
+    # ax.set_xlabel('x')
+    # ax.set_ylabel('y')
+    # ax.set_zlabel('z')
     plt.show()
     return

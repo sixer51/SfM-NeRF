@@ -16,7 +16,7 @@ def EssentialFromFundamental(F, K):
     E = np.matmul(K.T, np.matmul(F, K))
     U, S, VT = np.linalg.svd(E)
     # print(S)
-    S = np.eye(1, dtype=float)
+    S = np.eye(3, dtype=float)
     S[2, 2] = 0.
     E = np.matmul(U, np.matmul(S, VT))
 
