@@ -40,3 +40,19 @@ def drawMatchs(img1,img2,pairs):
         matchImage = cv2.circle(matchImage, (rightPoint[0],rightPoint[1]), radius = 4, color=(0,255,0), thickness = 2)
         matchImage = cv2.line(matchImage, leftPoint, rightPoint, color=(255,0,0),thickness=2)
     return matchImage
+
+def drawWorldPoints(multiXs, labels = []):
+    fig = plt.figure()
+    ax = plt.axes(projection ='3d')
+
+    for i in range(len(multiXs)):
+        x = multiXs[i, :, 0:]
+        y = multiXs[i, :, 1:]
+        z = multiXs[i, :, 2:]
+        ax.scatter(x, y, z)
+        
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+    plt.show()
+    return
