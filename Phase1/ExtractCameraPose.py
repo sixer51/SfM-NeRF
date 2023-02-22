@@ -23,7 +23,7 @@ def extractCameraPose(E):
     T = [U[:,2],
          -U[:,2],
          U[:,2],
-         U[:,2]]
+         -U[:,2]]
     
     for i in range(4):
         if np.linalg.det(R[i])<0:

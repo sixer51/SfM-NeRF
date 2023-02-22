@@ -24,8 +24,8 @@ def EstimateFundamentalMatrix(x1s, x2s):
                   x1, y1, 1])
         
     A = np.array(A)
-    _, _, VT = np.linalg.svd(A)
-    F = VT[-1, :].reshape((3, 3))
+    _, sig, VT = np.linalg.svd(A)
+    F = VT[np.argmin(sig), :].reshape((3, 3))
 
     U, S, VT = np.linalg.svd(F)
 

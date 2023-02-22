@@ -43,17 +43,42 @@ def drawMatchs(img1,img2,pairs):
 
 def drawWorldPoints(multiXs, labels = []):
     fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
     # ax = plt.axes(projection ='3d')
 
     for i in range(len(multiXs)):
         x = multiXs[i][:, 0]
         # y = multiXs[i][:, 1]
         z = multiXs[i][:, 2]
-        # ax.scatter(x, y, z)
-        plt.plot(x,z)
+        # ax.scatter(x, y, z, marker=".")
+        ax.plot(x,z,".",markersize=1)
         
     # ax.set_xlabel('x')
     # ax.set_ylabel('y')
     # ax.set_zlabel('z')
+    ax.set_xlim(-200,200)
+    ax.set_ylim(-200,200)
+    # ax.set_zlim(-200,200)
+    plt.show()
+    return
+
+def drawWorldPoints3D(multiXs, labels = []):
+    fig = plt.figure()
+    # ax = fig.add_subplot(1, 1, 1)
+    ax = plt.axes(projection ='3d')
+
+    for i in range(len(multiXs)):
+        x = multiXs[i][:, 0]
+        y = multiXs[i][:, 1]
+        z = multiXs[i][:, 2]
+        ax.scatter(x, y, z, marker=".")
+        # ax.plot(x,z,".",markersize=1)
+        
+    # ax.set_xlabel('x')
+    # ax.set_ylabel('y')
+    # ax.set_zlabel('z')
+    ax.set_xlim(-200,200)
+    ax.set_ylim(-200,200)
+    ax.set_zlim(-200,200)
     plt.show()
     return

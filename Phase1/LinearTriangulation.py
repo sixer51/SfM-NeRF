@@ -26,8 +26,8 @@ def EstimateWorldPoint(K, xs, Rs, Ts):
         A[3*i:3*i+3, :] = np.matmul(crossx, P)
     
     A = np.array(A)
-    _, _, VT = np.linalg.svd(A)
-    X = VT[-1, :]
+    _, sigma, VT = np.linalg.svd(A)
+    X = VT[np.argmin(sigma), :]
     X = X/X[-1]
     return X[:3]
 

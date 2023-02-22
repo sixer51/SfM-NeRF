@@ -13,7 +13,7 @@ def ransac(MatchPairs, MaxIter, threshold):
     AllOutlierList = []
 
     for i in range(MaxIter):
-        randPairsIdx = random.sample(range(NumPairs), 8)
+        randPairsIdx = random.sample(range(NumPairs), 16)
         x1s = []
         x2s = []
         for idx in randPairsIdx:
