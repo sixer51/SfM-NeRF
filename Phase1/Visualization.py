@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import sys
 import cv2
 import numpy as np
+import copy
 
 # Don't generate pyc codes
 sys.dont_write_bytecode = True
@@ -41,6 +42,13 @@ def drawMatchs(img1,img2,pairs):
         matchImage = cv2.line(matchImage, leftPoint, rightPoint, color=(255,0,0),thickness=2)
     return matchImage
 
+def drawPoints(img, points, color):
+    newImage = copy.copy(img)
+    for point in points:
+        newImage = cv2.circle(newImage, (int(point[0]), int(point[1])), radius = 1, color=color, thickness = 2)
+    return newImage
+
+
 def drawWorldPoints(multiXs, labels = []):
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
@@ -56,8 +64,8 @@ def drawWorldPoints(multiXs, labels = []):
     # ax.set_xlabel('x')
     # ax.set_ylabel('y')
     # ax.set_zlabel('z')
-    ax.set_xlim(-200,200)
-    ax.set_ylim(-200,200)
+    ax.set_xlim(-50,50)
+    ax.set_ylim(-50,50)
     # ax.set_zlim(-200,200)
     plt.show()
     return
