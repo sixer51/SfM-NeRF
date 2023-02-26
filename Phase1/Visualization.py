@@ -28,7 +28,7 @@ def displayImages(images, numCol = 4):
     return
 
 # def drawMatchs(img1,img2,img1FeaturePoints, img2FeaturePoints, matches):
-def drawMatchs(img1,img2,pairs):
+def drawMatchs(img1,img2,pairs,lineColor):
     emptyImage = np.zeros((img2.shape[0],img1.shape[1],3), dtype=np.uint8)
     matchImage = np.concatenate((img2,emptyImage), axis=1)
     matchImage[0:img1.shape[0],img2.shape[1]:img2.shape[1]+img1.shape[1],...] = img1
@@ -39,7 +39,7 @@ def drawMatchs(img1,img2,pairs):
 
         matchImage = cv2.circle(matchImage, (leftPoint[0],leftPoint[1]), radius = 4, color=(0,0,255), thickness = 2)
         matchImage = cv2.circle(matchImage, (rightPoint[0],rightPoint[1]), radius = 4, color=(0,255,0), thickness = 2)
-        matchImage = cv2.line(matchImage, leftPoint, rightPoint, color=(255,0,0),thickness=2)
+        matchImage = cv2.line(matchImage, leftPoint, rightPoint, color=lineColor,thickness=2)
     return matchImage
 
 def drawPoints(img, points, color):
@@ -64,8 +64,8 @@ def drawWorldPoints(multiXs, labels = []):
     # ax.set_xlabel('x')
     # ax.set_ylabel('y')
     # ax.set_zlabel('z')
-    ax.set_xlim(-50,50)
-    ax.set_ylim(-50,50)
+    ax.set_xlim(-25,25)
+    ax.set_ylim(-25,25)
     # ax.set_zlim(-200,200)
     plt.show()
     return
