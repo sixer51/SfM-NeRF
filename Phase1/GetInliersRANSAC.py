@@ -7,8 +7,8 @@ from EstimateFundamentalMatrix import *
 import random
 import cv2
 
-def ransac(MatchPairs, MaxIter, threshold):
-    NumPairs = len(MatchPairs)
+def ransac(image1Coords, image2Coords, MaxIter, threshold):
+    NumPairs = len(image1Coords)
     MaxInlier = 0
     MaxInlierList = []
     AllOutlierList = []
@@ -18,8 +18,8 @@ def ransac(MatchPairs, MaxIter, threshold):
         x1s = []
         x2s = []
         for idx in randPairsIdx:
-            x1s.append(MatchPairs[idx].coords1)
-            x2s.append(MatchPairs[idx].coords2)
+            x1s.append(image1Coords[idx])
+            x2s.append(image2Coords[idx])
         x1s = np.array(x1s)
         x2s = np.array(x2s)
 
@@ -27,8 +27,8 @@ def ransac(MatchPairs, MaxIter, threshold):
         InlierList = []
         OutlierList = []
         for j in range(NumPairs):
-            x1 = np.array(list(MatchPairs[j].coords1)+[1])
-            x2 = np.array(list(MatchPairs[j].coords2)+[1])
+            x1 = np.array(list(image1Coords[j])+[1])
+            x2 = np.array(list(image2Coords[j])+[1])
             x1Fx2 = abs(np.matmul(x2.T, np.matmul(F, x1)))
             if x1Fx2 < threshold:
                 InlierList.append(j)
@@ -43,8 +43,8 @@ def ransac(MatchPairs, MaxIter, threshold):
     return MaxInlierList, AllOutlierList
 
     
-def homographyRANSAC(MatchPairs, MaxIter, threshold):
-    NumPairs = len(MatchPairs)
+def homographyRANSAC(image1Coords, image2Coords, MaxIter, threshold):
+    NumPairs = len(image2Coords)
     MaxInlier = 0
     MaxInlierList = []
     AllOutlierList = []
@@ -54,8 +54,8 @@ def homographyRANSAC(MatchPairs, MaxIter, threshold):
         x1s = []
         x2s = []
         for idx in randPairsIdx:
-            x1s.append(MatchPairs[idx].coords1)
-            x2s.append(MatchPairs[idx].coords2)
+            x1s.append(image1Coords[idx])
+            x2s.append(image2Coords[idx])
         x1s = np.float32(x1s)
         x2s = np.float32(x2s)
 
@@ -63,8 +63,8 @@ def homographyRANSAC(MatchPairs, MaxIter, threshold):
         InlierList = []
         OutlierList = []
         for j in range(NumPairs):
-            x1 = np.array(list(MatchPairs[j].coords1)+[1])
-            x2 = np.array(list(MatchPairs[j].coords2)+[1])
+            x1 = np.array(list(image1Coords[j])+[1])
+            x2 = np.array(list(image2Coords[j])+[1])
             predict = np.matmul(h, np.array([x1[0],x1[1],1]).transpose())
             if np.linalg.norm(x2-predict) < threshold:
                 InlierList.append(j)
