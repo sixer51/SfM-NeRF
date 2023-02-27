@@ -42,6 +42,7 @@ class FeaturesAssociationMap:
         self.featuresU = None
         self.featuresV = None
         self._load(matchFileDirPath)
+        self.worldPoints = np.zeros((self.featuresU.shape[0], 3))
 
     def _load(self,matchFileDirPath):
         files = sorted(glob.glob(matchFileDirPath + 'matching*.txt'))
@@ -90,8 +91,8 @@ class FeaturesAssociationMap:
     
     def get_feature_matches(self, imagePair):
         image1Id,image2Id = imagePair
-        image1Id -= 1
-        image2Id -= 1
+        # image1Id -= 1
+        # image2Id -= 1
 
         idxs = np.where(np.logical_and(self.visibilityMap[:,image1Id], self.visibilityMap[:,image2Id]))[0]
 
@@ -103,13 +104,17 @@ class FeaturesAssociationMap:
 
         return image1Coords, image2Coords, idxs
 
+    def removeMatches(self, idxs, imgID):
+        self.visibilityMap[idxs, imgID] = 0
+
+    def updateWorldPoints(self, idxs, worldPoints):
+        self.worldPoints[idxs] = worldPoints
+
 def filterCoordsByIdxs(coords1, coords2, featuresIdxs, idxs):
     coords1_filtered = coords1[idxs]
     coords2_filtered = coords2[idxs]
     featuresIdxs_filtered = featuresIdxs[idxs]
     return coords1_filtered, coords2_filtered, featuresIdxs_filtered
-
-
 
 def getCameraParams(calibResultDirPath):
     calibResultFilePath = calibResultDirPath + "calibration.txt"
