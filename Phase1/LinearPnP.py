@@ -17,8 +17,8 @@ def linearPNP(Xs, xs, K):
         XHomo = np.hstack((Xs[i], np.ones(1)))
         x, y = xs[i]
         A[2*i : 2*i+2, :] = np.block([
-            [XHomo, np.zeros(1, 4), -x * XHomo],
-            [np.zeros(1, 4), XHomo, -y * XHomo]
+            [XHomo, np.zeros((1, 4)), -x * XHomo],
+            [np.zeros((1, 4)), XHomo, -y * XHomo]
         ])
 
     _, sig, VT = np.linalg.svd(A)
@@ -26,8 +26,8 @@ def linearPNP(Xs, xs, K):
 
     Kinv = np.linalg.inv(K)
     U, sig, VT = np.linalg.svd(Kinv @ P[:, :3])
-    R = U * VT
-    C = Kinv * P[:, 3] / sig[0]
+    R = U @ VT
+    C = Kinv @ P[:, 3] / sig[0]
     if np.linalg.det(R) < 0:
         R = -R
 

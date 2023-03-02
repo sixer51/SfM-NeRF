@@ -14,10 +14,10 @@ from scipy.spatial.transform import Rotation
 sys.dont_write_bytecode = True
 
 def flattenCR(C, R):
-    return np.hstack(C.reshape(-1), R.reshape(-1))
+    return np.hstack((C.reshape(-1), R.reshape(-1)))
 
 def recoverCR(x0):
-    C = x0[:3].reshape(1, 3)
+    C = x0[:3].reshape(3)
     R = x0[3:].reshape(3, 3)
     return C, R
 
@@ -28,10 +28,10 @@ def quaternion2R(q):
     return Rotation.from_quat(q).as_matrix()
 
 def flattenCq(C, q):
-    return np.hstack(C.reshape(-1), q.reshape(-1))
+    return np.hstack((C.reshape(-1), q.reshape(-1)))
 
 def recoverCq(x0):
-    C = x0[:3].reshape(1, 3)
+    C = x0[:3].reshape(3)
     q = x0[3:]
     return C, q
 

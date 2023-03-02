@@ -23,7 +23,7 @@ def PnPRANSAC(Xs, xs, K, MaxIter, threshold):
 
         inliers = []
         for i in range(length):
-            xProj = reprojection(K, R, C, Xs[i])[0]
+            xProj = reprojection(K, R, C, [Xs[i]])[0]
             error = reprojsErrorSquare(xs[i], xProj)
             if error < threshold:
                 inliers.append(i)
@@ -34,7 +34,3 @@ def PnPRANSAC(Xs, xs, K, MaxIter, threshold):
             Cbest = C
 
     return Rbest, Cbest
-
-
-
-
