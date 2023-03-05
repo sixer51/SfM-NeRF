@@ -53,7 +53,7 @@ def nonlinearPnPCR(K, xs, Xs, Cinit, Rinit):
     C, R = recoverCR(result.x)
     return C, R
 
-def nonlinearPnPCR(K, xs, Xs, Cinit, Rinit):
+def nonlinearPnPCq(K, xs, Xs, Cinit, Rinit):
     qinit = R2quaternion(Rinit)
     x0 = flattenCq(Cinit, qinit)
     result = least_squares(reprojErrorCq, x0, args=(K, xs, Xs), method='lm')
