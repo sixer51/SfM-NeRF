@@ -110,6 +110,12 @@ class FeaturesAssociationMap:
     def updateWorldPoints(self, idxs, worldPoints):
         self.worldPoints[idxs] = worldPoints
 
+    def getImagePoints(self, imageID, idxs):
+        return np.vstack([self.featuresU[idxs,imageID], self.featuresV[idxs,imageID]]).T
+    
+    def getWorldPoints(self, idxs):
+        return self.worldPoints[idxs, :]
+
 def filterCoordsByIdxs(coords1, coords2, featuresIdxs, idxs):
     coords1_filtered = coords1[idxs]
     coords2_filtered = coords2[idxs]
