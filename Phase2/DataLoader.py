@@ -4,35 +4,51 @@ import torch
 import json
 import cv2
 
-def loadDataset(datasetType, basePath):
-    fullPath = os.path.join(basePath, 'transforms_{}.json'.format(datasetType))
-    dataset = []
-    with open(fullPath, 'r') as file:
-        dataset = json.load(file)
-    frames = dataset["frames"]
+def loadDataset(basePath):
+    datasetTypeList = ['train', 'val', 'test']
+    datasetDict = {}
+    count = 0
+    split = []
+    allImages = {}
+    allPoses = {}
+    for datasetType in datasetTypeList:
+        fullPath = os.path.join(basePath, 'transforms_{}.json'.format(datasetType))
+        with open(fullPath, 'r') as file:
+            datasetDict[datasetType] = json.load(file)
 
-    images = []
-    poses = []
-    for frame in frames:
-        imgName = os.path.join(basePath, frame['file_path'] + '.png')
-        image = cv2.imread(imgName)
-        images.append(image)
-        pose = np.array(frame["transform_matrix"])
-        poses.append(pose)
+        frames = datasetDict[datasetType]["frames"]
+        images = []
+        poses = []
+        for frame in frames:
+            imgName = os.path.join(basePath, frame['file_path'] + '.png')
+            image = cv2.imread(imgName)
+            images.append(image)
+            pose = np.array(frame["transform_matrix"])
+            poses.append(pose)
 
-    images = (np.array(images) / 255.).astype(np.float32) # keep all 4 channels (RGBA)
-    poses = np.array(poses).astype(np.float32)
+        split.append(np.arange(count, count + len(images)))
+        count += len(images)
 
-    H, W = images[0].shape[:2]
-    camera_angle_x = float(dataset['camera_angle_x'])
-    focal = .5 * W / np.tan(.5 * camera_angle_x)
+        images = (np.array(images) / 255.).astype(np.float32)
+        poses = np.array(poses).astype(np.float32)
+        allImages[datasetType] = images
+        allPoses[datasetType] = poses
+
+    height, width = images[0].shape[:2]
+    camera_angle_x = float(datasetDict['train']['camera_angle_x'])
+    focal = .5 * width / np.tan(.5 * camera_angle_x)
     K = np.array([
-        [focal, 0, W / 2.],
-        [0, focal, H / 2.],
+        [focal, 0, width / 2.],
+        [0, focal, height / 2.],
         [0, 0, 1]
     ])
 
-    return H, W, focal, K, images, poses
+    near = 2.
+    far = 6.
 
-# H, W, focal, K, images, poses = loadDataset("train", "./Phase2/data/lego/")
-# print(H, W, focal, K)
+    return allImages, allPoses, [height, width, focal, K], near, far, split
+
+# def getRenderPose(viewAngle=-30, interval=41, radius=4.0):
+
+# images, poses, hwfk, near, far, split = loadDataset("./Phase2/data/lego/")
+# print(hwfk)
