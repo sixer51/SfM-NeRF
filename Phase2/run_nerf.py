@@ -388,7 +388,7 @@ def render_rays(ray_batch,
 #     raw = run_network(pts)
     raw = network_query_fn(pts, viewdirs, network_fn)
     # raw = rayTrace(network_fn, rays_o, rays_d, near,far, N_samples)
-    rgb_map, disp_map, acc_map, weights, depth_map = raw2outputs(raw, z_vals, rays_d, raw_noise_std, white_bkgd, pytest=pytest)
+    # rgb_map, disp_map, acc_map, weights, depth_map = raw2outputs(raw, z_vals, rays_d, raw_noise_std, white_bkgd, pytest=pytest)
 
     rgb_map = volumeRender(raw, z_vals, viewdirs)
 #     if N_importance > 0:

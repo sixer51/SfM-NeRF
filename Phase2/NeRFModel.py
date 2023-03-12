@@ -30,8 +30,8 @@ class NeRFmodel(nn.Module):
             nn.ReLU()
         )
 
-    def forward(self, input):
-        pos, dirc = torch.split(input, [self.dimPos, self.dimDirc], dim=-1)
+    def forward(self, pos, dirc):
+        # pos, dirc = torch.split(input, [self.dimPos, self.dimDirc], dim=-1)
         x = self.linear1(pos)
         for _ in range(self.depth-2):
             x = self.block(x)

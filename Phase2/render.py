@@ -22,14 +22,15 @@ def sample(rays_o,rays_d,near_bound,far_bound,numSamples = 200):
     view_directions = rays_d/torch.norm(rays_d,dim=-1,keepdim=True)
     
     t = torch.linspace(0., 1., steps = numSamples)
-
     z = near_bound * (1. - t) + far_bound*t
-
     z = z.expand([numRays,numSamples])
     pts = rays_o[...,None,:] + rays_d[...,None,:] * z[...,:,None]
+
     return pts, view_directions, z
     # return
 
+# input model output
+# output rgb image
 def volumeRender(network_outputs, z_vals, rays_d):
     distances = z_vals[...,1:] - z_vals[...,:-1]
     distances = torch.cat([distances, torch.Tensor([1e10]).expand(distances[...,:1].shape)], -1)
@@ -45,13 +46,13 @@ def volumeRender(network_outputs, z_vals, rays_d):
 
     return rgb_final
 
-def rayTrace( network_fn,rays_o,rays_d,near_bound,far_bound,numSamples = 200, maxNumRays = 64, batchSize = 1024*32):
-    pts, view_directions, z_vals = sample(rays_o,rays_d,near_bound,far_bound,numSamples)
+# def rayTrace(network_fn,rays_o,rays_d,near_bound,far_bound,numSamples = 200, maxNumRays = 64, batchSize = 1024*32):
+#     pts, view_directions, z_vals = sample(rays_o,rays_d,near_bound,far_bound,numSamples)
 
-    network_returns = torch.cat([network_fn(pts[i:i+batchSize], view_directions[i:i+batchSize]) for i in range(0, view_directions.shape[0], batchSize)])
-    # network_returns = network_fn()
-    rgbs = volumeRender(network_returns, z_vals, rays_d)
-    return rgbs
+#     network_returns = torch.cat([network_fn(pts[i:i+batchSize], view_directions[i:i+batchSize]) for i in range(0, view_directions.shape[0], batchSize)])
+#     # network_returns = network_fn()
+#     rgbs = volumeRender(network_returns, z_vals, rays_d)
+#     return rgbs
 
 
 
