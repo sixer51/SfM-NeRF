@@ -2,8 +2,9 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-class Nerf(nn.module):
+class NeRFmodel(nn.Module):
     def __init__(self, depth=8, width=256, dimPos=3, dimDirc=3):
+        super(NeRFmodel, self).__init__()
         self.depth = depth
         self.width = width
         self.dimPos = dimPos
@@ -16,8 +17,12 @@ class Nerf(nn.module):
             nn.Linear(self.width, self.width),
             nn.ReLU()
         )
-        self.linearFeatureDensity = nn.Sequential(
+        self.linearToFeatureDensity = nn.Sequential(
             nn.Linear(self.width, self.width + 1),
+            nn.ReLU()
+        )
+        self.linearFromFeatureDensity = nn.Sequential(
+            nn.Linear(self.width + dimDirc, self.width // 2),
             nn.ReLU()
         )
         self.linearLast = nn.Sequential(
@@ -31,10 +36,12 @@ class Nerf(nn.module):
         for _ in range(self.depth-2):
             x = self.block(x)
 
-        x = self.linearFeatureDensity(x)
-        density = x[0]
-        feature = x[1:]
+        x = self.linearToFeatureDensity(x)
+        density = x[:,0]
+        feature = x[:,1:]
         x = torch.cat([feature, dirc], -1)
+        x = self.linearFromFeatureDensity(x)
         rgb = self.linearLast(x)
+        density = density.view(-1, 1)
         output = torch.cat([rgb, density], -1)
         return output
