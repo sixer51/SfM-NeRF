@@ -64,8 +64,8 @@ def loadModel(model, args):
     if latest_ckpt_file and args.load_checkpoint:
         print(latest_ckpt_file)
         latest_ckpt = torch.load(latest_ckpt_file)
-        # startIter = latest_ckpt_file.replace(args.checkpoint_path,'').replace('model_','').replace('.ckpt','')
-        # startIter = int(startIter)
+        startIter = latest_ckpt_file.replace(args.checkpoint_path,'').replace('model_','').replace('.ckpt','')
+        startIter = int(startIter)
         model.load_state_dict(latest_ckpt['model_state_dict'])
         print(f"Loaded latest checkpoint from {latest_ckpt_file} ....")
     else:
@@ -102,7 +102,15 @@ def train(images, poses, hwf, K, near, far, args):
 
         numRay = args.n_rays_batch
         rays_o, rays_d = cameraFrameToRays(H, W, K, torch.Tensor(poseGT))
-        coords = torch.stack(torch.meshgrid(torch.linspace(0, H-1, H), torch.linspace(0, W-1, W)), -1)
+
+        if iter < args.center_crop_iter:
+            scale = 0.5
+            dH = int(H//2 * scale)
+            dW = int(W//2 * scale)
+            coords = torch.stack(torch.meshgrid(torch.linspace(H//2-dH, H//2+dH-1, 2*dH), 
+                                                torch.linspace(W//2-dW, W//2+dW-1, 2*dW)), -1)
+        else:
+            coords = torch.stack(torch.meshgrid(torch.linspace(0, H-1, H), torch.linspace(0, W-1, W)), -1)
         coords = torch.reshape(coords, [-1,2])
         
         # choose random rays
@@ -121,7 +129,7 @@ def train(images, poses, hwf, K, near, far, args):
         lossIter.backward()
         optimizer.step()
         
-        if iter % 100 == 0:
+        if iter % 10 == 0:
             print(f"iter:{iter}, loss_this_iter:{lossIter}\n")
             writer.add_scalar('LossEveryIter', lossIter, iter)
             writer.flush()
@@ -140,6 +148,8 @@ def train(images, poses, hwf, K, near, far, args):
 
     print("Training is done")
 
+to8b = lambda x : (255*np.clip(x,0,1)).astype(np.uint8)
+
 def test(images, hwf, K, render_poses, near, far, args):
     render_poses = torch.Tensor(render_poses).to(device)
     H, W, focal = hwf
@@ -156,15 +166,19 @@ def test(images, hwf, K, render_poses, near, far, args):
     for i, pose in enumerate(render_poses):
         rays_o, rays_d = cameraFrameToRays(H, W, K, torch.Tensor(pose))
         batch_rays = torch.stack([rays_o, rays_d], 0)
-
-        rgbMap = render(batch_rays, model, near, far, args)
+        with torch.no_grad():
+            rgbMap = render(batch_rays, model, near, far, args)
         image = rgbMap.reshape((H, W, 3))
         image = image.detach().cpu().numpy()
         # plt.figure(figsize=(16, 8))
         # plt.axis("off")
         # plt.imshow(image)
         # plt.show()
-        cv2.imwrite("{}view_{}.png".format(args.images_path, i), image)
+        image8 = to8b(image)
+        # image8 = cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
+        # cv2.imwrite("{}view_{}.png".format(args.images_path, i), image)
+        filename = "{}view_{}.png".format(args.images_path, i)
+        imageio.imwrite(filename, image8)
         print("Saved image ", i)
 
 
@@ -175,29 +189,32 @@ def main(args):
     images, poses, hwf, K, near, far, split = loadDataset("./Phase2/data/lego/", testskip=args.testskip)
     i_train, i_val, i_test = split
     images = images[...,:3]*images[...,-1:] + (1.-images[...,-1:])
+    # images = images[...,:3]
 
     if args.mode == 'train':
         print("Start training")
         train(images[i_train], poses[i_train], hwf, K, near, far, args)
     elif args.mode == 'test':
         print("Start testing")
+        args.load_checkpoint = True
         render_poses = getRenderPose()
         test(images[i_test], hwf, K, render_poses, near, far, args)
 
 def configParser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset_path',default='../data/lego/',help="dataset path")
-    parser.add_argument('--mode',default='train',help="train/test/val")
+    parser.add_argument('--mode',default='test',help="train/test/val")
     parser.add_argument('--lrate',default=5e-4,help="training learning rate")
     parser.add_argument('--n_pos_freq',default=10,help="number of positional encoding frequencies for position")
     parser.add_argument('--n_dirc_freq',default=4,help="number of positional encoding frequencies for viewing direction")
     parser.add_argument('--n_rays_batch',default=32*32*4,help="number of rays per batch")
-    parser.add_argument('--n_sample',default=128,help="number of rays per batch")
+    parser.add_argument('--n_sample',default=400,help="number of sample per ray")
     parser.add_argument('--max_iters',default=10000,help="number of max iterations for training")
     parser.add_argument('--logs_path',default="./logs/",help="logs path")
     parser.add_argument('--checkpoint_path',default="./checkpoints/",help="checkpoints path")
-    parser.add_argument('--load_checkpoint',default=False,help="whether to load checkpoint or not")
+    parser.add_argument('--load_checkpoint',default=True,help="whether to load checkpoint or not")
     parser.add_argument('--save_ckpt_iter',default=1000,help="num of iteration to save checkpoint")
+    parser.add_argument('--center_crop_iter',default=500,help="center crop image for training before this iteration")
     parser.add_argument('--images_path', default="./image/",help="folder to store images")
     parser.add_argument('--testskip', default=8,help="downsample test images")
     return parser
