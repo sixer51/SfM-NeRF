@@ -14,4 +14,5 @@ def positionEncoder(input, L, includeInput=True):
             encodingRes.append(fun((2.0**i)*input))
     
     # outputDim = len(encodingRes)
-    return torch.concat(encodingRes, axis=-1)
+    encodingRes = torch.concat(encodingRes, axis=-1)
+    return encodingRes
