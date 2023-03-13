@@ -18,8 +18,11 @@ def volumetricLoss(rgbMap, rgbMapGT):
     loss = torch.mean((rgbMap - rgbMapGT)**2)
     return loss
 
-def render(rays, model, near, far, args, batchSize = 1024*32):
+def render(rays, model, near, far, args, batchSize = 1024*16):
     rays_o, rays_d = rays
+    rays_o = rays_o.reshape(-1, 3)
+    rays_d = rays_d.reshape(-1, 3)
+    numRay = rays_o.shape[0]
 
     # viewdirs = rays_d
     # viewdirs = viewdirs / torch.norm(viewdirs, dim=-1, keepdim=True)
@@ -36,12 +39,19 @@ def render(rays, model, near, far, args, batchSize = 1024*32):
 
     pts,viewdirs,z_vals = sample(rays_o,rays_d,near,far, args.n_sample)
 
-    view_directions = viewdirs.view(args.n_rays_batch, 1, 3)
-    view_directions = view_directions.expand([args.n_rays_batch, args.n_sample, 3])
+    view_directions = viewdirs.view(numRay, 1, 3)
+    view_directions = view_directions.expand([numRay, args.n_sample, 3])
 
-    posEnc = positionEncoder(pts, args.n_pos_freq).reshape(args.n_rays_batch*args.n_sample, -1)
-    dirEnc = positionEncoder(view_directions, args.n_dirc_freq).reshape(args.n_rays_batch*args.n_sample, -1)
-    raw = torch.cat([model(posEnc[i:i+batchSize], dirEnc[i:i+batchSize]) for i in range(0, posEnc.shape[0], batchSize)])
+    posEnc = positionEncoder(pts, args.n_pos_freq).reshape(numRay*args.n_sample, -1)
+    dirEnc = positionEncoder(view_directions, args.n_dirc_freq).reshape(numRay*args.n_sample, -1)
+    # raw = torch.cat([model(posEnc[i:i+batchSize], dirEnc[i:i+batchSize]) for i in range(0, posEnc.shape[0], batchSize)])
+
+    outputs = []
+    for i in range(0, posEnc.shape[0], batchSize):
+        # torch.cuda.empty_cache()
+        outputs.append(model(posEnc[i:i+batchSize], dirEnc[i:i+batchSize]))
+    raw = torch.cat(outputs)
+
     raw = raw.reshape((-1, args.n_sample, 4))
 
     rgbMap = volumeRender(raw, z_vals, viewdirs)
@@ -112,13 +122,15 @@ def train(images, poses, hwf, K, near, far, args):
         optimizer.zero_grad()
         lossIter.backward()
         optimizer.step()
-
-        print(f"iter:{iter}, loss_this_iter:{lossIter}\n")
-        writer.add_scalar('LossEveryIter', lossIter, iter)
-        writer.flush()
+        
+        if iter % 100 == 0:
+            print(f"iter:{iter}, loss_this_iter:{lossIter}\n")
+            writer.add_scalar('LossEveryIter', lossIter, iter)
+            writer.flush()
 
         # save checkpoint
         if iter % args.save_ckpt_iter == 0:
+            print("Saved a checkpoint {}".format(iter))
             if not (os.path.isdir(args.checkpoint_path)):
                 os.makedirs(args.checkpoint_path)
             
@@ -141,10 +153,26 @@ def test(images, hwf, K, render_poses, near, far, args):
     loadModel(model, args)
     model.eval()
 
+    if not (os.path.isdir(args.images_path)):
+        os.makedirs(args.images_path)
+
     for i, pose in enumerate(render_poses):
         rays_o, rays_d = cameraFrameToRays(H, W, K, torch.Tensor(pose))
         batch_rays = torch.stack([rays_o, rays_d], 0)
 
+        '''
+        num_interval = 40
+        interval = 400 // num_interval
+        rgbMaps = []
+        for i in range(num_interval):
+            print(i)
+            batch_rays_sub = batch_rays[:, :, interval*i:interval*(i+1), :]
+            torch.cuda.empty_cache()
+            rgbMap = render(batch_rays_sub, model, near, far, args)
+            rgbMap = rgbMap.reshape((H, interval, 3))
+            rgbMaps.append(rgbMap)
+        image = torch.cat(rgbMaps, 1)
+        '''
         rgbMap = render(batch_rays, model, near, far, args)
         image = rgbMap.reshape((H, W, 3))
         image = image.detach().cpu().numpy()
@@ -171,24 +199,25 @@ def configParser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--display',action='store_true',help="to display images")
     parser.add_argument('--dataset_path',default='../data/lego/',help="dataset path")
-    parser.add_argument('--mode',default='train',help="train/test/val")
+    parser.add_argument('--mode',default='test',help="train/test/val")
     parser.add_argument('--lrate',default=5e-4,help="training learning rate")
     parser.add_argument('--lrate_decay',default=25,help="decay learning rate")
     parser.add_argument('--n_ray_points',default=64,help="number of samples on a ray")
     parser.add_argument('--n_pos_freq',default=10,help="number of positional encoding frequencies for position")
     parser.add_argument('--n_dirc_freq',default=4,help="number of positional encoding frequencies for viewing direction")
     parser.add_argument('--n_rays_batch',default=32*32*4,help="number of rays per batch")
-    parser.add_argument('--n_sample',default=128,help="number of rays per batch")
+    parser.add_argument('--n_sample',default=32,help="number of rays per batch")
     parser.add_argument('--max_iters',default=10000,help="number of max iterations for training")
-    parser.add_argument('--logs_path',default="../logs/",help="logs path")
-    parser.add_argument('--checkpoint_path',default="../checkpoints/",help="checkpoints path")
+    parser.add_argument('--logs_path',default="./logs/",help="logs path")
+    parser.add_argument('--checkpoint_path',default="./checkpoints/",help="checkpoints path")
     parser.add_argument('--load_checkpoint',default=False,help="whether to load checkpoint or not")
-    parser.add_argument('--save_ckpt_iter',default=100,help="checkpoints path")
-    parser.add_argument('--images_path', default="../image/",help="folder to store images")
+    parser.add_argument('--save_ckpt_iter',default=1000,help="num of iteration to save checkpoint")
+    parser.add_argument('--images_path', default="./image/",help="folder to store images")
     parser.add_argument('--testskip', default=8,help="downsample test images")
     return parser
 
 if __name__ == "__main__":
     parser = configParser()
     args = parser.parse_args()
+    torch.set_default_tensor_type('torch.cuda.FloatTensor')
     main(args)
