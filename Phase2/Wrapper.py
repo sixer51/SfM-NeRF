@@ -207,7 +207,7 @@ def configParser():
     parser.add_argument('--n_sample',default=40,help="number of sample per ray")
     parser.add_argument('--max_iters',default=10000,help="number of max iterations for training")
     parser.add_argument('--logs_path',default="./logs/",help="logs path")
-    parser.add_argument('--checkpoint_path',default="./checkpoints/",help="checkpoints path")
+    parser.add_argument('--checkpoint_path',default="./Phase2/checkpoints/",help="checkpoints path")
     parser.add_argument('--load_checkpoint',default=True,help="whether to load checkpoint or not")
     parser.add_argument('--save_ckpt_iter',default=1000,help="num of iteration to save checkpoint")
     parser.add_argument('--center_crop_iter',default=500,help="center crop image for training before this iteration")
