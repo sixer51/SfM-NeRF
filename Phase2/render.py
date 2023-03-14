@@ -45,14 +45,3 @@ def volumeRender(network_outputs, z_vals, rays_d):
     rgb_final = rgb_final + (1.-weights_sum[...,None])
 
     return rgb_final
-
-# def rayTrace(network_fn,rays_o,rays_d,near_bound,far_bound,numSamples = 200, maxNumRays = 64, batchSize = 1024*32):
-#     pts, view_directions, z_vals = sample(rays_o,rays_d,near_bound,far_bound,numSamples)
-
-#     network_returns = torch.cat([network_fn(pts[i:i+batchSize], view_directions[i:i+batchSize]) for i in range(0, view_directions.shape[0], batchSize)])
-#     # network_returns = network_fn()
-#     rgbs = volumeRender(network_returns, z_vals, rays_d)
-#     return rgbs
-
-
-

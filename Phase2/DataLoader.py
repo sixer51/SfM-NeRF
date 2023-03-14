@@ -96,8 +96,3 @@ def loadDataset(basePath, halfRes=True, testskip=1):
         allImages = imgHalfRes
 
     return allImages, allPoses, [height, width, focal], K, near, far, split
-
-# def getRenderPose(viewAngle=-30, interval=41, radius=4.0):
-
-# images, poses, hwfk, near, far, split = loadDataset("./Phase2/data/lego/")
-# print(hwfk)

@@ -13,6 +13,7 @@ from PositionEncoder import *
 from render import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(device)
 np.random.seed(0)
 
 def volumetricLoss(rgbMap, rgbMapGT):
@@ -43,8 +44,8 @@ def render(rays, model, near, far, args, batchSize = 1024):
         posEnc = positionEncoder(pts[i:i+batchSize, ...], args.n_pos_freq).reshape(numRay*args.n_sample, -1)
         dirEnc = positionEncoder(view_directions[i:i+batchSize, ...], args.n_dirc_freq).reshape(numRay*args.n_sample, -1)
         output = model(posEnc, dirEnc)
-        if args.mode=="test":
-            output = output.detach().cpu()
+        # if args.mode=="test":
+        #     output = output.detach().cpu()
         outputs.append(output)
         # posEnc.detach().cpu()
         # dirEnc.detach().cpu()
@@ -63,7 +64,7 @@ def loadModel(model, args):
 
     if latest_ckpt_file and args.load_checkpoint:
         print(latest_ckpt_file)
-        latest_ckpt = torch.load(latest_ckpt_file)
+        latest_ckpt = torch.load(latest_ckpt_file, map_location=torch.device(device))
         startIter = latest_ckpt_file.replace(args.checkpoint_path,'').replace('model_','').replace('.ckpt','')
         startIter = int(startIter)
         model.load_state_dict(latest_ckpt['model_state_dict'])
@@ -150,7 +151,8 @@ def train(images, poses, hwf, K, near, far, args):
 
 to8b = lambda x : (255*np.clip(x,0,1)).astype(np.uint8)
 
-def test(images, hwf, K, render_poses, near, far, args):
+def test(hwf, K, near, far, args):
+    render_poses = getRenderPose()
     render_poses = torch.Tensor(render_poses).to(device)
     H, W, focal = hwf
 
@@ -171,13 +173,7 @@ def test(images, hwf, K, render_poses, near, far, args):
             rgbMap = render(batch_rays, model, near, far, args)
         image = rgbMap.reshape((H, W, 3))
         image = image.detach().cpu().numpy()
-        # plt.figure(figsize=(16, 8))
-        # plt.axis("off")
-        # plt.imshow(image)
-        # plt.show()
         image8 = to8b(image)
-        # image8 = cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
-        # cv2.imwrite("{}view_{}.png".format(args.images_path, i), image)
         filename = "{}view_{}.png".format(args.images_path, i)
         imageio.imwrite(filename, image8)
         images.append(image8)
@@ -188,11 +184,9 @@ def test(images, hwf, K, render_poses, near, far, args):
 def main(args):
     # load data
     print("Loading data...")
-    # images, poses, hwf, K, near, far, split = loadDataset("./SfM-Nerf/Phase2/data/lego/", testskip=args.testskip)
-    images, poses, hwf, K, near, far, split = loadDataset("./Phase2/data/lego/", testskip=args.testskip)
+    images, poses, hwf, K, near, far, split = loadDataset(args.data_path, testskip=args.testskip)
     i_train, i_val, i_test = split
     images = images[...,:3]*images[...,-1:] + (1.-images[...,-1:])
-    # images = images[...,:3]
 
     if args.mode == 'train':
         print("Start training")
@@ -200,18 +194,17 @@ def main(args):
     elif args.mode == 'test':
         print("Start testing")
         args.load_checkpoint = True
-        render_poses = getRenderPose()
-        test(images[i_test], hwf, K, render_poses, near, far, args)
+        test(hwf, K, near, far, args)
 
 def configParser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset_path',default='../data/lego/',help="dataset path")
+    parser.add_argument('--data_path',default="./Phase2/data/lego/",help="dataset path")
     parser.add_argument('--mode',default='test',help="train/test/val")
     parser.add_argument('--lrate',default=5e-4,help="training learning rate")
     parser.add_argument('--n_pos_freq',default=10,help="number of positional encoding frequencies for position")
     parser.add_argument('--n_dirc_freq',default=4,help="number of positional encoding frequencies for viewing direction")
     parser.add_argument('--n_rays_batch',default=32*32*4,help="number of rays per batch")
-    parser.add_argument('--n_sample',default=400,help="number of sample per ray")
+    parser.add_argument('--n_sample',default=40,help="number of sample per ray")
     parser.add_argument('--max_iters',default=10000,help="number of max iterations for training")
     parser.add_argument('--logs_path',default="./logs/",help="logs path")
     parser.add_argument('--checkpoint_path',default="./checkpoints/",help="checkpoints path")
@@ -225,5 +218,6 @@ def configParser():
 if __name__ == "__main__":
     parser = configParser()
     args = parser.parse_args()
-    torch.set_default_tensor_type('torch.cuda.FloatTensor')
+    if device == "cuda":
+        torch.set_default_tensor_type('torch.cuda.FloatTensor')
     main(args)

@@ -29,11 +29,9 @@ class NeRFmodel(nn.Module):
         )
         self.linearToFeature = nn.Sequential(
             nn.Linear(self.width, self.width)
-            # nn.ReLU()
         )
         self.linearToDensity = nn.Sequential(
             nn.Linear(self.width, 1)
-            # nn.ReLU()
         )
         self.linearFromFeatureDensity = nn.Sequential(
             nn.Linear(self.width + dimDirc, self.width // 2),
@@ -41,19 +39,14 @@ class NeRFmodel(nn.Module):
         )
         self.linearLast = nn.Sequential(
             nn.Linear(self.width // 2, 3)
-            # nn.ReLU()
         )
 
     def forward(self, pos, dirc):
-        # pos, dirc = torch.split(input, [self.dimPos, self.dimDirc], dim=-1)
         x = self.linear1(pos)
-        # for _ in range(self.depth-2):
         x = self.block(x)
 
         feature = self.linearToFeature(x)
         density = self.linearToDensity(x)
-        # density = x[:,0]
-        # feature = x[:,1:]
         x = torch.cat([feature, dirc], -1)
         x = self.linearFromFeatureDensity(x)
         rgb = self.linearLast(x)
