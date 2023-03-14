@@ -16,7 +16,7 @@ import os
 # Don't generate pyc codes
 sys.dont_write_bytecode = True
 
-dataDirPath = os.getcwd() + '/P3Data/'
+dataDirPath = os.getcwd() + '/Phase1/P3Data/'
 images = loadImages(dataDirPath)
 K = getCameraParams(dataDirPath)
 print(K)
