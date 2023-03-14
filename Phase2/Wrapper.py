@@ -163,6 +163,7 @@ def test(images, hwf, K, render_poses, near, far, args):
     if not (os.path.isdir(args.images_path)):
         os.makedirs(args.images_path)
 
+    images = []
     for i, pose in enumerate(render_poses):
         rays_o, rays_d = cameraFrameToRays(H, W, K, torch.Tensor(pose))
         batch_rays = torch.stack([rays_o, rays_d], 0)
@@ -179,7 +180,9 @@ def test(images, hwf, K, render_poses, near, far, args):
         # cv2.imwrite("{}view_{}.png".format(args.images_path, i), image)
         filename = "{}view_{}.png".format(args.images_path, i)
         imageio.imwrite(filename, image8)
+        images.append(image8)
         print("Saved image ", i)
+    imageio.mimsave(args.images_path+'lego.gif', images, fps=10)
 
 
 def main(args):
