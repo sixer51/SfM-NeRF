@@ -18,22 +18,22 @@ sys.dont_write_bytecode = True
 
 dataDirPath = os.getcwd() + '/P3Data/'
 images = loadImages(dataDirPath)
-
 K = getCameraParams(dataDirPath)
 print(K)
 
 featuresMap = FeaturesAssociationMap(dataDirPath)
-image1Coords, image2Coords, featureIdxs = featuresMap.get_feature_matches((1,2))
 
 imagePairs = [[0, 1], [0, 2], [0, 3], [0, 4]]
 allImagePointIdx = set()
 inlierPointPairs = []
-allC = np.zeros((len(imagePairs), 3))
-allR = np.zeros((len(imagePairs), 3, 3))
+allC = np.zeros((len(imagePairs)+1, 3))
+allR = np.zeros((len(imagePairs)+1, 3, 3))
+allIntersectPoints = []
+allRefinedX = []
 
 for i in range(len(imagePairs)):
-    image1Id = imagePairs[i, 0]
-    image2Id = imagePairs[i, 1]
+    image1Id = imagePairs[i][0]
+    image2Id = imagePairs[i][1]
     image1Coords, image2Coords, featureIdxs = featuresMap.get_feature_matches((image1Id,image2Id))
     InlierIdxs, OutlierIdxs = homographyRANSAC(image1Coords, image2Coords, 2000, 50)
     image1Inliers_homography, image2Inliers_homography, featureIdxs_homography = filterCoordsByIdxs(image1Coords, image2Coords, featureIdxs, InlierIdxs)
@@ -44,6 +44,12 @@ for i in range(len(imagePairs)):
     image1Outliers, image2Outliers, OutlierGlobalIdxs = filterCoordsByIdxs(image1Inliers_homography, image2Inliers_homography,featureIdxs_homography, OutlierIdxs)
     featuresMap.removeMatches(OutlierGlobalIdxs, image2Id)
     inlierPointPairs.append(InlierGlobalIdxs)
+
+    matchImage = drawMatchs(images[image1Id], images[image2Id], image1Inliers, image2Inliers, (0,255,0))
+    plt.figure(figsize=(16, 8))
+    plt.axis("off")
+    plt.imshow(matchImage)
+    plt.show()
 
 image1Inliers = featuresMap.getImagePoints(0, inlierPointPairs[0])
 image2Inliers = featuresMap.getImagePoints(1, inlierPointPairs[0])
@@ -66,18 +72,7 @@ drawWorldPoints([Xest])
 XestNonlinear = nonlinearTriangulation(K, np.eye(3), np.zeros((3,1)), Rest, Test, image1Inliers, image2Inliers, Xest)
 featuresMap.updateWorldPoints(list(allImagePointIdx), XestNonlinear)
 drawWorldPoints([XestNonlinear])
-
-# image1Id = 0
-# image2Id = 2
-# image1Coords, image2Coords, featureIdxs = featuresMap.get_feature_matches((image1Id,image2Id))
-# InlierIdxs, OutlierIdxs = homographyRANSAC(image1Coords, image2Coords, 2000, 50)
-# image1Inliers_homography, image2Inliers_homography, featureIdxs_homography = filterCoordsByIdxs(image1Coords, image2Coords, featureIdxs, InlierIdxs)
-# image1Outliers_homography, image2Outliers_homography, _ = filterCoordsByIdxs(image1Coords, image2Coords, featureIdxs, OutlierIdxs)
-# InlierIdxs, OutlierIdxs = ransac(image1Inliers_homography, image2Inliers_homography, 10000, 0.01)
-# image1Inliers, image2Inliers, featureIdxs = filterCoordsByIdxs(image1Inliers_homography, image2Inliers_homography,featureIdxs_homography, InlierIdxs)
-# image1Outliers, image2Outliers, OutlierGlobalIdxs = filterCoordsByIdxs(image1Inliers_homography, image2Inliers_homography,featureIdxs_homography, OutlierIdxs)
-# featuresMap.removeMatches(OutlierGlobalIdxs, image2Id)
-# intersectIdx = AllImagePointIdx & set(featureIdxs)
+allRefinedX.append(XestNonlinear)
 
 # start including image 3, 4, 5
 for imagePairID in range(1, 4):
@@ -88,8 +83,6 @@ for imagePairID in range(1, 4):
     inlierGlobalIdxs = inlierPointPairs[imagePairID]
 
     intersectIdx = list(allImagePointIdx & set(inlierGlobalIdxs))
-    # intersectImagePoints = np.vstack([featuresMap.featuresU[intersectIdx, imageID], featuresMap.featuresV[intersectIdx, imageID]]).T
-    # intersectWorldPoints = featuresMap.worldPoints[intersectIdx]
     intersectImagePoints = featuresMap.getImagePoints(imageID, intersectIdx)
     intersectWorldPoints = featuresMap.getWorldPoints(intersectIdx)
     Rinit, Cinit = PnPRANSAC(intersectWorldPoints, intersectImagePoints, K, 2000, 1)
@@ -102,18 +95,19 @@ for imagePairID in range(1, 4):
 
     Xlinear = LinearTriangulation(K, image1Inliers, image2Inliers, np.eye(3), np.zeros((3,1)), RNonlinear, CNonlinear)
     XNonlinear = nonlinearTriangulation(K, np.eye(3), np.zeros((3,1)), RNonlinear, CNonlinear, image1Inliers, image2Inliers, Xlinear)
-
     featuresMap.updateWorldPoints(list(inlierGlobalIdxs), XNonlinear)
     allImagePointIdx = allImagePointIdx | set(inlierGlobalIdxs)
+    drawWorldPoints([XNonlinear])
 
-    visMatrix = BuildVisibilityMatrix(np.array([0, 1, 2]), np.array(list(allImagePointIdx), dtype=int), featuresMap.visibilityMap)
+    matchedImageID = np.linspace(0, imageID, imageID + 1).astype(int)
+    visMatrix = BuildVisibilityMatrix(matchedImageID, np.array(list(allImagePointIdx), dtype=int), featuresMap.visibilityMap)
 
     # before bundle adjustment
-    matchedImageID = np.linspace(0, imageID + 1, imageID + 1)
-    imagePointMatrix = [featuresMap.getImagePoints(i, list(allImagePointIdx)) for i in matchedImageID]
+    imagePointMatrix = [featuresMap.getImagePoints(int(i), list(allImagePointIdx)) for i in matchedImageID]
     Xinit = featuresMap.getWorldPoints(list(allImagePointIdx))
 
     allCbundle, allRbundle, Xbundle = BundleAdjustment(allC[:imagePair+1], allR[:imagePair+1], Xinit, imagePointMatrix, K, visMatrix)
     allC[:imagePair+1] = allCbundle
     allR[:imagePair+1] = allRbundle
     featuresMap.updateWorldPoints(list(allImagePointIdx), Xbundle)
+    drawWorldPoints([XNonlinear, Xbundle])

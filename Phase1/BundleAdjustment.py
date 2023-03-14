@@ -20,31 +20,41 @@ def quaternion2R(q):
 def flattenCRX(C, R, X):
     return np.hstack((C.reshape(-1), R.reshape(-1), X.reshape(-1)))
 
-def recoverCRX(x0):
-    C = x0[:3].reshape(3)
-    R = x0[3:12].reshape(3, 3)
-    X = x0[12:].reshape(-1, 3)
-    return C, R, X
-
 def flattenCqX(C, q, X):
     return np.hstack((C.reshape(-1), q.reshape(-1), X.reshape(-1)))
 
-def recoverCqX(x0):
-    C = x0[:3].reshape(3)
-    q = x0[3:7]
-    X = x0[7:].reshape(-1, 3)
+def recoverCRX(x0, num):
+    C = x0[:3*num].reshape(-1, 3)
+    R = x0[3*num:12*num].reshape(-1, 3, 3)
+    X = x0[12*num:].reshape(-1, 3)
+    return C, R, X
+
+def recoverCqX(x0, num):
+    C = x0[:3*num].reshape(-1, 3)
+    q = x0[3*num:7*num].reshape(-1, 4)
+    X = x0[7*num:].reshape(-1, 3)
     return C, q, X
 
 def reprojErrorCqX(x0, x, K, V):
-    allError = 0
-    
+    numCam = V.shape[0]
+    C, q, X = recoverCqX(x0, numCam)
+    allError = []
 
-    return allError
+    for i in range(numCam):
+        R = quaternion2R(q[i])
+        reproj = reprojection(K, R, C[i], X)
+        reprojError = x[i] - reproj
+        reprojError[:, 0] = reprojError[:, 0] * V[i]
+        reprojError[:, 1] = reprojError[:, 1] * V[i]
+        allError.append(reprojError.reshape(-1))
+
+    return np.hstack(allError)
 
 def BundleAdjustment(Cinit, Rinit, Xinit, x, K, V):
     qinit = R2quaternion(Rinit)
     x0 = flattenCqX(Cinit, qinit, Xinit)
     result = least_squares(reprojErrorCqX, x0, args=(x, K, V), method='lm')
-    C, q, X = recoverCqX(result.x)
+    numCam = V.shape[0]
+    C, q, X = recoverCqX(x0, numCam)
     R = quaternion2R(q)
     return C, R, X

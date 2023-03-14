@@ -9,12 +9,10 @@ def reprojection(K, R, C, Xs):
     T = np.hstack((R, t))
     P = np.matmul(K, T)
 
-    reprojImagePoints = []
-    for X in Xs:
-        X = np.hstack((X, np.ones(1)))
-        x = P @ X
-        u = x[0] / x[2]
-        v = x[1] / x[2]
-        reprojImagePoints.append([u, v])
-
+    # reprojImagePoints = []
+    Xhomo = np.concatenate((Xs, np.ones((Xs.shape[0], 1))), 1)
+    x = (P @ Xhomo.T).T
+    x[:, 0] = x[:, 0] / x[:, 2]
+    x[:, 1] = x[:, 1] / x[:, 2]
+    reprojImagePoints = x[:, :2]
     return np.array(reprojImagePoints)
